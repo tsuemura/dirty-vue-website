@@ -1,6 +1,15 @@
 <template>
   <div id="main-container">
     <div class="wrapper">
+      <div v-if="showSaleBanner" class="promotion-banner-top">
+        <div class="banner-content">
+          <div class="banner-title">期間限定セール実施中！</div>
+          <div class="banner-subtitle">全品最大50%OFF</div>
+          <div class="banner-timer">残り時間: {{ saleTimer }}</div>
+          <div class="banner-close" @click="closeSaleBanner">✕</div>
+        </div>
+      </div>
+      
       <div class="top-bar">
         <div class="logo-area">
           <div class="logo-text">ショッピングモール</div>
@@ -146,13 +155,6 @@
         </div>
       </div>
 
-      <div class="promotion-banner">
-        <div class="banner-content">
-          <div class="banner-title">期間限定セール実施中！</div>
-          <div class="banner-subtitle">全品最大50%OFF</div>
-          <div class="banner-timer">残り時間: {{ saleTimer }}</div>
-        </div>
-      </div>
 
       <div class="footer">
         <div class="footer-content">
@@ -199,6 +201,7 @@ export default {
       brands: ['ブランドA', 'ブランドB', 'ブランドC', 'ブランドD', 'ブランドE'],
       selectedBrands: [],
       searchQuery: '',
+      showSaleBanner: false,
       products: [],
       displayProducts: [],
       productColors: ['#E8E8E8', '#F0E6E6', '#E6F0F0', '#F0F0E6', '#E6E6F0', '#F0E6F0', '#E6F0E6']
@@ -207,6 +210,7 @@ export default {
   mounted() {
     this.initializeProducts()
     this.randomizeDisplay()
+    this.randomizeSaleBanner()
     this.startSaleTimer()
     this.startStockUpdates()
   },
@@ -397,6 +401,13 @@ export default {
       this.searchQuery = ''
       this.applyFilters()
     },
+    randomizeSaleBanner() {
+      // 50%の確率でセールバナーを表示
+      this.showSaleBanner = Math.random() > 0.5
+    },
+    closeSaleBanner() {
+      this.showSaleBanner = false
+    },
     startSaleTimer() {
       const updateTimer = () => {
         const now = new Date()
@@ -431,6 +442,73 @@ export default {
 .wrapper {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.promotion-banner-top {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+  color: white;
+  padding: 15px 20px;
+  text-align: center;
+  position: relative;
+  animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.promotion-banner-top .banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.promotion-banner-top .banner-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.promotion-banner-top .banner-subtitle {
+  font-size: 14px;
+}
+
+.promotion-banner-top .banner-timer {
+  font-size: 16px;
+  font-weight: bold;
+  background: rgba(255,255,255,0.2);
+  padding: 5px 15px;
+  border-radius: 20px;
+}
+
+.banner-close {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  width: 25px;
+  height: 25px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.banner-close:hover {
+  background: rgba(255,255,255,0.3);
 }
 
 .top-bar {
@@ -980,30 +1058,6 @@ export default {
   border-color: #ff6b6b;
 }
 
-.promotion-banner {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
-  color: white;
-  padding: 40px;
-  text-align: center;
-  margin: 40px 20px;
-  border-radius: 8px;
-}
-
-.banner-title {
-  font-size: 28px;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-
-.banner-subtitle {
-  font-size: 18px;
-  margin-bottom: 15px;
-}
-
-.banner-timer {
-  font-size: 24px;
-  font-weight: bold;
-}
 
 .footer {
   background: #333;
