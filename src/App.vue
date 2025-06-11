@@ -253,7 +253,8 @@ export default {
         reviews: Math.floor(Math.random() * 500) + 10,
         color: this.productColors[Math.floor(Math.random() * this.productColors.length)],
         favorited: false,
-        sortKey: Math.random()
+        sortKey: Math.random(),
+        originalOrder: index
       }))
     },
     randomizeDisplay() {
@@ -303,7 +304,7 @@ export default {
         filtered = filtered.filter(product => this.selectedBrands.includes(product.brand))
       }
       
-      // ソート適用
+      // ソート適用（ランダム化は特定の場合のみ）
       switch(this.currentSort) {
         case '価格が安い順':
           filtered.sort((a, b) => a.price - b.price)
@@ -318,15 +319,21 @@ export default {
           filtered.sort(() => Math.random() - 0.5)
           break
         default:
-          filtered.sort(() => Math.random() - 0.5)
+          // おすすめ順は元の順序を保持
+          filtered.sort((a, b) => a.originalOrder - b.originalOrder)
+          break
       }
       
-      // 商品を更新
-      this.displayProducts = filtered.map(product => ({
-        ...product,
-        stock: Math.floor(Math.random() * 20) + 1,
-        sortKey: Math.random()
-      }))
+      // 商品を更新（在庫のみランダム化、sortKeyは保持）
+      this.displayProducts = filtered.map(product => {
+        // 既存のdisplayProductsから同じ商品のsortKeyを探す
+        const existingProduct = this.displayProducts.find(p => p.id === product.id)
+        return {
+          ...product,
+          stock: Math.floor(Math.random() * 20) + 1,
+          sortKey: existingProduct ? existingProduct.sortKey : product.sortKey
+        }
+      })
     },
     selectCategory(category) {
       this.selectedCategory = category
@@ -375,13 +382,16 @@ export default {
       this.applyFilters()
     },
     performSearch() {
-      // 検索ボタンクリック時
+      // 検索ボタンクリック時のみ順序をランダム化
       this.applyFilters()
-      // 検索時に順序をランダム化
-      this.displayProducts = this.displayProducts.map(product => ({
-        ...product,
-        sortKey: Math.random()
-      }))
+      if (this.currentSort === 'おすすめ順') {
+        this.displayProducts = this.displayProducts.map(product => ({
+          ...product,
+          sortKey: Math.random()
+        }))
+        // ランダム順で再ソート
+        this.displayProducts.sort(() => Math.random() - 0.5)
+      }
     },
     clearSearch() {
       this.searchQuery = ''
