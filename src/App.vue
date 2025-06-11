@@ -24,7 +24,9 @@
 
       <div class="category-bar">
         <div v-for="category in categories" :key="category" class="category-item">
-          <div class="category-link" @click="selectCategory(category)">{{ category }}</div>
+          <div class="category-link" 
+               :class="{ active: selectedCategory === category }"
+               @click="selectCategory(category)">{{ category }}</div>
         </div>
       </div>
 
@@ -34,16 +36,25 @@
             <div class="filter-title">絞り込み</div>
             <div class="filter-group">
               <div class="filter-label">価格帯</div>
-              <div v-for="range in priceRanges" :key="range" class="filter-option">
-                <div class="checkbox"></div>
+              <div v-for="range in priceRanges" :key="range" class="filter-option" @click="togglePriceRange(range)">
+                <div class="checkbox" :class="{ checked: selectedPriceRanges.includes(range) }">
+                  <div v-if="selectedPriceRanges.includes(range)" class="checkmark">✓</div>
+                </div>
                 <div class="filter-text">{{ range }}</div>
               </div>
             </div>
             <div class="filter-group">
               <div class="filter-label">ブランド</div>
-              <div v-for="brand in brands" :key="brand" class="filter-option">
-                <div class="checkbox"></div>
+              <div v-for="brand in brands" :key="brand" class="filter-option" @click="toggleBrand(brand)">
+                <div class="checkbox" :class="{ checked: selectedBrands.includes(brand) }">
+                  <div v-if="selectedBrands.includes(brand)" class="checkmark">✓</div>
+                </div>
                 <div class="filter-text">{{ brand }}</div>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <div class="clear-filters" @click="clearFilters">
+                <div class="clear-text">フィルターをクリア</div>
               </div>
             </div>
           </div>
@@ -159,8 +170,11 @@ export default {
       currentSort: 'おすすめ順',
       saleTimer: '',
       categories: ['すべて', 'ファッション', '家電', '食品', 'インテリア', '本・雑誌', 'スポーツ', 'おもちゃ'],
+      selectedCategory: 'すべて',
       priceRanges: ['〜¥1,000', '¥1,000〜¥5,000', '¥5,000〜¥10,000', '¥10,000〜'],
+      selectedPriceRanges: [],
       brands: ['ブランドA', 'ブランドB', 'ブランドC', 'ブランドD', 'ブランドE'],
+      selectedBrands: [],
       products: [],
       displayProducts: [],
       productColors: ['#E8E8E8', '#F0E6E6', '#E6F0F0', '#F0F0E6', '#E6E6F0', '#F0E6F0', '#E6F0E6']
@@ -174,12 +188,27 @@ export default {
   },
   methods: {
     initializeProducts() {
-      const productNames = [
-        'ワイヤレスイヤホン', 'スマートウォッチ', 'ノートパソコン', 'コーヒーメーカー',
-        'ヨガマット', 'ランニングシューズ', 'バックパック', 'デスクライト',
-        'ワイヤレスマウス', 'USBハブ', 'モバイルバッテリー', 'Bluetoothスピーカー',
-        'タブレットスタンド', 'キーボード', 'ウェブカメラ', 'マイク',
-        'HDMIケーブル', 'SDカード', '外付けSSD', 'スマホケース'
+      const productData = [
+        { name: 'ワイヤレスイヤホン', category: '家電', brand: 'ブランドA' },
+        { name: 'スマートウォッチ', category: '家電', brand: 'ブランドB' },
+        { name: 'ノートパソコン', category: '家電', brand: 'ブランドC' },
+        { name: 'コーヒーメーカー', category: '家電', brand: 'ブランドD' },
+        { name: 'ヨガマット', category: 'スポーツ', brand: 'ブランドE' },
+        { name: 'ランニングシューズ', category: 'スポーツ', brand: 'ブランドA' },
+        { name: 'バックパック', category: 'ファッション', brand: 'ブランドB' },
+        { name: 'デスクライト', category: 'インテリア', brand: 'ブランドC' },
+        { name: 'ワイヤレスマウス', category: '家電', brand: 'ブランドD' },
+        { name: 'USBハブ', category: '家電', brand: 'ブランドE' },
+        { name: 'モバイルバッテリー', category: '家電', brand: 'ブランドA' },
+        { name: 'Bluetoothスピーカー', category: '家電', brand: 'ブランドB' },
+        { name: 'タブレットスタンド', category: '家電', brand: 'ブランドC' },
+        { name: 'キーボード', category: '家電', brand: 'ブランドD' },
+        { name: '料理本', category: '本・雑誌', brand: 'ブランドE' },
+        { name: 'インテリア雑誌', category: '本・雑誌', brand: 'ブランドA' },
+        { name: 'おもちゃブロック', category: 'おもちゃ', brand: 'ブランドB' },
+        { name: 'ぬいぐるみ', category: 'おもちゃ', brand: 'ブランドC' },
+        { name: 'オーガニック野菜セット', category: '食品', brand: 'ブランドD' },
+        { name: 'コーヒー豆', category: '食品', brand: 'ブランドE' }
       ]
       
       const descriptions = [
@@ -187,11 +216,13 @@ export default {
         'レビュー高評価', 'ベストセラー商品', '新商品', 'お買い得品'
       ]
       
-      this.products = productNames.map((name, index) => ({
+      this.products = productData.map((data, index) => ({
         id: index,
-        name: name,
+        name: data.name,
+        category: data.category,
+        brand: data.brand,
         description: descriptions[Math.floor(Math.random() * descriptions.length)],
-        price: Math.floor(Math.random() * 50000) + 1000,
+        price: Math.floor(Math.random() * 50000) + 500,
         originalPrice: Math.random() > 0.5 ? Math.floor(Math.random() * 70000) + 5000 : null,
         stock: Math.floor(Math.random() * 20) + 1,
         rating: Math.floor(Math.random() * 3) + 3,
@@ -202,24 +233,99 @@ export default {
       }))
     },
     randomizeDisplay() {
-      // ページロードごとに商品の順番をランダムに
-      this.displayProducts = [...this.products].sort(() => Math.random() - 0.5)
+      this.applyFilters()
+    },
+    applyFilters() {
+      let filtered = [...this.products]
       
-      // 在庫数もランダムに更新
-      this.displayProducts.forEach(product => {
-        product.stock = Math.floor(Math.random() * 20) + 1
-        product.sortKey = Math.random() // キーを更新して再レンダリング
-      })
+      // カテゴリフィルター
+      if (this.selectedCategory !== 'すべて') {
+        filtered = filtered.filter(product => product.category === this.selectedCategory)
+      }
+      
+      // 価格帯フィルター
+      if (this.selectedPriceRanges.length > 0) {
+        filtered = filtered.filter(product => {
+          return this.selectedPriceRanges.some(range => {
+            switch(range) {
+              case '〜¥1,000':
+                return product.price <= 1000
+              case '¥1,000〜¥5,000':
+                return product.price > 1000 && product.price <= 5000
+              case '¥5,000〜¥10,000':
+                return product.price > 5000 && product.price <= 10000
+              case '¥10,000〜':
+                return product.price > 10000
+              default:
+                return true
+            }
+          })
+        })
+      }
+      
+      // ブランドフィルター
+      if (this.selectedBrands.length > 0) {
+        filtered = filtered.filter(product => this.selectedBrands.includes(product.brand))
+      }
+      
+      // ソート適用
+      switch(this.currentSort) {
+        case '価格が安い順':
+          filtered.sort((a, b) => a.price - b.price)
+          break
+        case '価格が高い順':
+          filtered.sort((a, b) => b.price - a.price)
+          break
+        case '評価順':
+          filtered.sort((a, b) => b.rating - a.rating)
+          break
+        case '新着順':
+          filtered.sort(() => Math.random() - 0.5)
+          break
+        default:
+          filtered.sort(() => Math.random() - 0.5)
+      }
+      
+      // 商品を更新
+      this.displayProducts = filtered.map(product => ({
+        ...product,
+        stock: Math.floor(Math.random() * 20) + 1,
+        sortKey: Math.random()
+      }))
     },
     selectCategory(category) {
-      // カテゴリ選択時に順番を再シャッフル
-      this.randomizeDisplay()
+      this.selectedCategory = category
+      this.applyFilters()
+    },
+    togglePriceRange(range) {
+      const index = this.selectedPriceRanges.indexOf(range)
+      if (index > -1) {
+        this.selectedPriceRanges.splice(index, 1)
+      } else {
+        this.selectedPriceRanges.push(range)
+      }
+      this.applyFilters()
+    },
+    toggleBrand(brand) {
+      const index = this.selectedBrands.indexOf(brand)
+      if (index > -1) {
+        this.selectedBrands.splice(index, 1)
+      } else {
+        this.selectedBrands.push(brand)
+      }
+      this.applyFilters()
+    },
+    clearFilters() {
+      this.selectedCategory = 'すべて'
+      this.selectedPriceRanges = []
+      this.selectedBrands = []
+      this.applyFilters()
     },
     toggleSort() {
       const sorts = ['おすすめ順', '価格が安い順', '価格が高い順', '新着順', '評価順']
       const currentIndex = sorts.indexOf(this.currentSort)
       this.currentSort = sorts[(currentIndex + 1) % sorts.length]
-      this.randomizeDisplay()
+      this.applyFilters()
     },
     addToCart(product) {
       this.cartItems++
@@ -231,7 +337,7 @@ export default {
     handleSearch(event) {
       // 検索時に商品を再シャッフル
       if (event.target.textContent.length > 2) {
-        this.randomizeDisplay()
+        this.applyFilters()
       }
     },
     startSaleTimer() {
@@ -385,6 +491,12 @@ export default {
   color: #ff6b6b;
 }
 
+.category-link.active {
+  color: #ff6b6b;
+  font-weight: bold;
+  border-bottom: 2px solid #ff6b6b;
+}
+
 .main-content {
   display: flex;
   gap: 20px;
@@ -432,9 +544,48 @@ export default {
   height: 18px;
   border: 2px solid #ddd;
   border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.checkbox.checked {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+.checkmark {
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
 }
 
 .filter-text {
+  font-size: 14px;
+  color: #666;
+}
+
+.filter-actions {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.clear-filters {
+  padding: 8px 15px;
+  background: #f0f0f0;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s;
+  text-align: center;
+}
+
+.clear-filters:hover {
+  background: #e0e0e0;
+}
+
+.clear-text {
   font-size: 14px;
   color: #666;
 }
