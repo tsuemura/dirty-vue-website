@@ -1,95 +1,150 @@
 <template>
   <div id="main-container">
-    <div class="container">
-      <div class="header-section">
-        <div class="title-wrapper">
-          <div class="main-title">動的要素デモサイト</div>
-          <div class="sub-title">{{ currentTime }}</div>
+    <div class="wrapper">
+      <div class="top-bar">
+        <div class="logo-area">
+          <div class="logo-text">ショッピングモール</div>
         </div>
-      </div>
-
-      <div class="control-panel">
-        <div class="button-group">
-          <div class="control-button" @click="addRandomBox">ボックス追加</div>
-          <div class="control-button" @click="shuffleColors">色をシャッフル</div>
-          <div class="control-button" @click="toggleAnimation">アニメーション切替</div>
-          <div class="control-button" @click="generateRandomData">データ生成</div>
+        <div class="search-area">
+          <div class="search-box">
+            <div class="search-input" contenteditable="true" @input="handleSearch">商品を検索...</div>
+            <div class="search-button">検索</div>
+          </div>
         </div>
-      </div>
-
-      <div class="dynamic-section">
-        <div class="dynamic-grid">
-          <div v-for="(box, index) in colorBoxes" :key="`box-${index}-${box.id}`"
-               class="item-box color-box"
-               :style="{ backgroundColor: box.color }"
-               @click="handleBoxClick(index)">
-            <div class="box-content">
-              <div class="box-number">{{ box.value }}</div>
-              <div class="box-label">Box {{ index + 1 }}</div>
-            </div>
+        <div class="user-area">
+          <div class="cart-icon">
+            <div class="cart-count">{{ cartItems }}</div>
+            <div class="cart-text">カート</div>
+          </div>
+          <div class="user-menu">
+            <div class="user-name">ゲスト様</div>
           </div>
         </div>
       </div>
 
-      <div class="data-section">
-        <div class="data-grid">
-          <div v-for="item in randomData" :key="`data-${item.id}`" class="data-item">
-            <div class="data-header">
-              <div class="data-title">{{ item.title }}</div>
-              <div class="data-value">{{ item.value }}</div>
-            </div>
-            <div class="data-body">
-              <div v-for="(tag, tagIndex) in item.tags" :key="`tag-${tagIndex}`" class="random-item">
-                {{ tag }}
+      <div class="category-bar">
+        <div v-for="category in categories" :key="category" class="category-item">
+          <div class="category-link" @click="selectCategory(category)">{{ category }}</div>
+        </div>
+      </div>
+
+      <div class="main-content">
+        <div class="sidebar">
+          <div class="filter-section">
+            <div class="filter-title">絞り込み</div>
+            <div class="filter-group">
+              <div class="filter-label">価格帯</div>
+              <div v-for="range in priceRanges" :key="range" class="filter-option">
+                <div class="checkbox"></div>
+                <div class="filter-text">{{ range }}</div>
               </div>
             </div>
-            <div class="data-footer">
-              <div class="timestamp">{{ item.timestamp }}</div>
+            <div class="filter-group">
+              <div class="filter-label">ブランド</div>
+              <div v-for="brand in brands" :key="brand" class="filter-option">
+                <div class="checkbox"></div>
+                <div class="filter-text">{{ brand }}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="interactive-area">
-        <div class="click-zone" @mousemove="handleMouseMove">
-          <div v-for="particle in particles" :key="`particle-${particle.id}`"
-               class="particle"
-               :style="{
-                 left: particle.x + 'px',
-                 top: particle.y + 'px',
-                 backgroundColor: particle.color,
-                 width: particle.size + 'px',
-                 height: particle.size + 'px'
-               }">
+        <div class="product-area">
+          <div class="sort-bar">
+            <div class="result-count">{{ products.length }}件の商品</div>
+            <div class="sort-options">
+              <div class="sort-label">並び替え:</div>
+              <div class="sort-select" @click="toggleSort">
+                <div class="sort-value">{{ currentSort }}</div>
+                <div class="sort-arrow">▼</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="products-grid">
+            <div v-for="product in displayProducts" :key="`product-${product.id}-${product.sortKey}`" 
+                 class="product-card">
+              <div class="product-image-wrapper">
+                <div class="product-image" :style="{ backgroundColor: product.color }">
+                  <div class="image-placeholder">{{ product.name.substring(0, 2) }}</div>
+                </div>
+                <div v-if="product.stock < 5" class="stock-badge">
+                  <div class="badge-text">残り{{ product.stock }}個</div>
+                </div>
+              </div>
+              <div class="product-info">
+                <div class="product-name">{{ product.name }}</div>
+                <div class="product-description">{{ product.description }}</div>
+                <div class="product-meta">
+                  <div class="price-section">
+                    <div class="price-current">¥{{ product.price.toLocaleString() }}</div>
+                    <div v-if="product.originalPrice" class="price-original">
+                      ¥{{ product.originalPrice.toLocaleString() }}
+                    </div>
+                  </div>
+                  <div class="rating-section">
+                    <div class="stars">
+                      <div v-for="n in 5" :key="n" class="star" 
+                           :class="{ filled: n <= product.rating }">★</div>
+                    </div>
+                    <div class="review-count">({{ product.reviews }})</div>
+                  </div>
+                </div>
+                <div class="product-actions">
+                  <div class="add-to-cart" @click="addToCart(product)">
+                    <div class="cart-icon-small">🛒</div>
+                    <div class="add-text">カートに追加</div>
+                  </div>
+                  <div class="favorite-button" @click="toggleFavorite(product)">
+                    <div class="heart-icon">{{ product.favorited ? '❤️' : '🤍' }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pagination">
+            <div class="page-button">前へ</div>
+            <div v-for="page in 5" :key="page" class="page-number" 
+                 :class="{ active: page === currentPage }">{{ page }}</div>
+            <div class="page-button">次へ</div>
           </div>
         </div>
       </div>
 
-      <div class="status-section">
-        <div class="status-grid">
-          <div v-for="n in 12" :key="`status-${n}`" class="status-item">
-            <div class="status-indicator" :class="{ active: activeStatuses.includes(n) }"></div>
-            <div class="status-label">Status {{ n }}</div>
-          </div>
+      <div class="promotion-banner">
+        <div class="banner-content">
+          <div class="banner-title">期間限定セール実施中！</div>
+          <div class="banner-subtitle">全品最大50%OFF</div>
+          <div class="banner-timer">残り時間: {{ saleTimer }}</div>
         </div>
       </div>
 
-      <div v-if="showLoader" class="loader-overlay">
-        <div class="loader"></div>
-        <div class="loader"></div>
-        <div class="loader"></div>
+      <div class="footer">
+        <div class="footer-content">
+          <div class="footer-column">
+            <div class="footer-title">ショッピングガイド</div>
+            <div class="footer-link">ご利用方法</div>
+            <div class="footer-link">送料について</div>
+            <div class="footer-link">返品・交換</div>
+          </div>
+          <div class="footer-column">
+            <div class="footer-title">カスタマーサポート</div>
+            <div class="footer-link">お問い合わせ</div>
+            <div class="footer-link">よくある質問</div>
+            <div class="footer-link">配送状況確認</div>
+          </div>
+          <div class="footer-column">
+            <div class="footer-title">会社情報</div>
+            <div class="footer-link">会社概要</div>
+            <div class="footer-link">採用情報</div>
+            <div class="footer-link">プレスリリース</div>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <div class="copyright">© 2024 ショッピングモール All Rights Reserved.</div>
+        </div>
       </div>
-    </div>
-
-    <div v-for="(element, index) in floatingElements" :key="`float-${index}`"
-         class="floating-element"
-         :style="{
-           top: element.y + 'px',
-           left: element.x + 'px',
-           backgroundColor: element.color
-         }"
-         @click="removeFloatingElement(index)">
-      {{ element.text }}
     </div>
   </div>
 </template>
@@ -99,137 +154,106 @@ export default {
   name: 'App',
   data() {
     return {
-      currentTime: '',
-      colorBoxes: [],
-      randomData: [],
-      particles: [],
-      floatingElements: [],
-      activeStatuses: [],
-      showLoader: false,
-      animationActive: true,
-      colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#F4A460', '#98D8C8'],
-      mouseX: 0,
-      mouseY: 0
+      cartItems: 0,
+      currentPage: 1,
+      currentSort: 'おすすめ順',
+      saleTimer: '',
+      categories: ['すべて', 'ファッション', '家電', '食品', 'インテリア', '本・雑誌', 'スポーツ', 'おもちゃ'],
+      priceRanges: ['〜¥1,000', '¥1,000〜¥5,000', '¥5,000〜¥10,000', '¥10,000〜'],
+      brands: ['ブランドA', 'ブランドB', 'ブランドC', 'ブランドD', 'ブランドE'],
+      products: [],
+      displayProducts: [],
+      productColors: ['#E8E8E8', '#F0E6E6', '#E6F0F0', '#F0F0E6', '#E6E6F0', '#F0E6F0', '#E6F0E6']
     }
   },
   mounted() {
-    this.initializeApp()
-    this.startTimeUpdate()
-    this.startRandomUpdates()
+    this.initializeProducts()
+    this.randomizeDisplay()
+    this.startSaleTimer()
+    this.startStockUpdates()
   },
   methods: {
-    initializeApp() {
-      this.generateColorBoxes(8)
-      this.generateRandomData()
-      this.updateActiveStatuses()
-    },
-    generateColorBoxes(count) {
-      this.colorBoxes = Array.from({ length: count }, (_, i) => ({
-        id: Math.random(),
-        color: this.colors[i % this.colors.length],
-        value: Math.floor(Math.random() * 100)
+    initializeProducts() {
+      const productNames = [
+        'ワイヤレスイヤホン', 'スマートウォッチ', 'ノートパソコン', 'コーヒーメーカー',
+        'ヨガマット', 'ランニングシューズ', 'バックパック', 'デスクライト',
+        'ワイヤレスマウス', 'USBハブ', 'モバイルバッテリー', 'Bluetoothスピーカー',
+        'タブレットスタンド', 'キーボード', 'ウェブカメラ', 'マイク',
+        'HDMIケーブル', 'SDカード', '外付けSSD', 'スマホケース'
+      ]
+      
+      const descriptions = [
+        '高品質な商品です', '人気の定番アイテム', '今季のトレンド商品', '限定セール中',
+        'レビュー高評価', 'ベストセラー商品', '新商品', 'お買い得品'
+      ]
+      
+      this.products = productNames.map((name, index) => ({
+        id: index,
+        name: name,
+        description: descriptions[Math.floor(Math.random() * descriptions.length)],
+        price: Math.floor(Math.random() * 50000) + 1000,
+        originalPrice: Math.random() > 0.5 ? Math.floor(Math.random() * 70000) + 5000 : null,
+        stock: Math.floor(Math.random() * 20) + 1,
+        rating: Math.floor(Math.random() * 3) + 3,
+        reviews: Math.floor(Math.random() * 500) + 10,
+        color: this.productColors[Math.floor(Math.random() * this.productColors.length)],
+        favorited: false,
+        sortKey: Math.random()
       }))
     },
-    addRandomBox() {
-      const newBox = {
-        id: Math.random(),
-        color: this.colors[Math.floor(Math.random() * this.colors.length)],
-        value: Math.floor(Math.random() * 100)
+    randomizeDisplay() {
+      // ページロードごとに商品の順番をランダムに
+      this.displayProducts = [...this.products].sort(() => Math.random() - 0.5)
+      
+      // 在庫数もランダムに更新
+      this.displayProducts.forEach(product => {
+        product.stock = Math.floor(Math.random() * 20) + 1
+        product.sortKey = Math.random() // キーを更新して再レンダリング
+      })
+    },
+    selectCategory(category) {
+      // カテゴリ選択時に順番を再シャッフル
+      this.randomizeDisplay()
+    },
+    toggleSort() {
+      const sorts = ['おすすめ順', '価格が安い順', '価格が高い順', '新着順', '評価順']
+      const currentIndex = sorts.indexOf(this.currentSort)
+      this.currentSort = sorts[(currentIndex + 1) % sorts.length]
+      this.randomizeDisplay()
+    },
+    addToCart(product) {
+      this.cartItems++
+      product.stock = Math.max(0, product.stock - 1)
+    },
+    toggleFavorite(product) {
+      product.favorited = !product.favorited
+    },
+    handleSearch(event) {
+      // 検索時に商品を再シャッフル
+      if (event.target.textContent.length > 2) {
+        this.randomizeDisplay()
       }
-      this.colorBoxes.push(newBox)
-      this.createFloatingElement('新しいボックス追加！')
     },
-    shuffleColors() {
-      this.colorBoxes = this.colorBoxes.map(box => ({
-        ...box,
-        color: this.colors[Math.floor(Math.random() * this.colors.length)]
-      }))
-    },
-    toggleAnimation() {
-      this.animationActive = !this.animationActive
-      this.showLoader = true
-      setTimeout(() => {
-        this.showLoader = false
-      }, 1000)
-    },
-    generateRandomData() {
-      const titles = ['アイテム', 'データ', '要素', 'コンテンツ', 'オブジェクト']
-      const tags = ['タグA', 'タグB', 'タグC', 'タグD', 'タグE', 'タグF']
-      
-      this.randomData = Array.from({ length: 6 }, () => ({
-        id: Math.random(),
-        title: titles[Math.floor(Math.random() * titles.length)] + Math.floor(Math.random() * 100),
-        value: Math.floor(Math.random() * 1000),
-        tags: Array.from({ length: Math.floor(Math.random() * 4) + 1 }, () => 
-          tags[Math.floor(Math.random() * tags.length)]
-        ),
-        timestamp: new Date().toLocaleTimeString()
-      }))
-    },
-    handleBoxClick(index) {
-      const box = this.colorBoxes[index]
-      box.value = Math.floor(Math.random() * 100)
-      this.createParticles(event.clientX, event.clientY)
-    },
-    handleMouseMove(event) {
-      this.mouseX = event.clientX
-      this.mouseY = event.clientY
-      
-      if (Math.random() > 0.95 && this.animationActive) {
-        this.createParticles(event.clientX, event.clientY)
+    startSaleTimer() {
+      const updateTimer = () => {
+        const now = new Date()
+        const hours = 23 - now.getHours()
+        const minutes = 59 - now.getMinutes()
+        const seconds = 59 - now.getSeconds()
+        this.saleTimer = `${hours}時間${minutes}分${seconds}秒`
       }
-    },
-    createParticles(x, y) {
-      const newParticles = Array.from({ length: 5 }, () => ({
-        id: Math.random(),
-        x: x + (Math.random() - 0.5) * 50,
-        y: y + (Math.random() - 0.5) * 50,
-        color: this.colors[Math.floor(Math.random() * this.colors.length)],
-        size: Math.random() * 20 + 5
-      }))
       
-      this.particles.push(...newParticles)
-      
-      setTimeout(() => {
-        this.particles = this.particles.slice(-20)
-      }, 1000)
+      updateTimer()
+      setInterval(updateTimer, 1000)
     },
-    createFloatingElement(text) {
-      const element = {
-        text: text || `要素 ${this.floatingElements.length + 1}`,
-        x: Math.random() * (window.innerWidth - 200),
-        y: Math.random() * (window.innerHeight - 100),
-        color: this.colors[Math.floor(Math.random() * this.colors.length)]
-      }
-      this.floatingElements.push(element)
-    },
-    removeFloatingElement(index) {
-      this.floatingElements.splice(index, 1)
-    },
-    updateActiveStatuses() {
-      const count = Math.floor(Math.random() * 6) + 1
-      this.activeStatuses = Array.from({ length: count }, () => 
-        Math.floor(Math.random() * 12) + 1
-      )
-    },
-    startTimeUpdate() {
+    startStockUpdates() {
+      // 定期的に在庫数を変更
       setInterval(() => {
-        this.currentTime = new Date().toLocaleTimeString()
-      }, 1000)
-    },
-    startRandomUpdates() {
-      setInterval(() => {
-        if (this.animationActive) {
-          this.updateActiveStatuses()
-          
-          if (Math.random() > 0.7) {
-            const randomIndex = Math.floor(Math.random() * this.colorBoxes.length)
-            if (this.colorBoxes[randomIndex]) {
-              this.colorBoxes[randomIndex].value = Math.floor(Math.random() * 100)
-            }
-          }
+        const randomProduct = this.displayProducts[Math.floor(Math.random() * this.displayProducts.length)]
+        if (randomProduct) {
+          randomProduct.stock = Math.floor(Math.random() * 20) + 1
         }
-      }, 2000)
+      }, 5000)
     }
   }
 }
@@ -238,190 +262,500 @@ export default {
 <style scoped>
 #main-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background-color: #f5f5f5;
 }
 
-.header-section {
-  text-align: center;
-  padding: 40px 0;
+.wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.title-wrapper {
-  display: inline-block;
+.top-bar {
+  background: white;
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-.main-title {
-  font-size: 36px;
+.logo-area {
+  flex: 0 0 200px;
+}
+
+.logo-text {
+  font-size: 24px;
   font-weight: bold;
-  margin-bottom: 10px;
+  color: #333;
 }
 
-.sub-title {
-  font-size: 18px;
+.search-area {
+  flex: 1;
+  padding: 0 30px;
+}
+
+.search-box {
+  display: flex;
+  background: #f0f0f0;
+  border-radius: 25px;
+  overflow: hidden;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  outline: none;
   color: #666;
 }
 
-.control-panel {
-  margin: 30px 0;
+.search-button {
+  padding: 10px 25px;
+  background: #ff6b6b;
+  color: white;
+  cursor: pointer;
+  transition: background 0.3s;
 }
 
-.button-group {
+.search-button:hover {
+  background: #ff5252;
+}
+
+.user-area {
   display: flex;
-  justify-content: center;
-  gap: 15px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 25px;
 }
 
-.control-button {
+.cart-icon {
+  position: relative;
+  cursor: pointer;
+}
+
+.cart-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ff6b6b;
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.cart-text {
+  margin-top: 5px;
+  font-size: 14px;
+}
+
+.user-name {
+  font-size: 14px;
+  color: #666;
+}
+
+.category-bar {
+  background: white;
   padding: 10px 20px;
-  background: #3498db;
+  display: flex;
+  gap: 30px;
+  border-bottom: 1px solid #eee;
+  overflow-x: auto;
+}
+
+.category-item {
+  flex-shrink: 0;
+}
+
+.category-link {
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: color 0.3s;
+  font-size: 14px;
+}
+
+.category-link:hover {
+  color: #ff6b6b;
+}
+
+.main-content {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+
+.sidebar {
+  flex: 0 0 250px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  height: fit-content;
+}
+
+.filter-section {
+  
+}
+
+.filter-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.filter-group {
+  margin-bottom: 25px;
+}
+
+.filter-label {
+  font-weight: bold;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #ddd;
+  border-radius: 3px;
+}
+
+.filter-text {
+  font-size: 14px;
+  color: #666;
+}
+
+.product-area {
+  flex: 1;
+}
+
+.sort-bar {
+  background: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.result-count {
+  font-size: 16px;
+  color: #666;
+}
+
+.sort-options {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sort-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.sort-select {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 15px;
+  background: #f0f0f0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.sort-value {
+  font-size: 14px;
+}
+
+.sort-arrow {
+  font-size: 12px;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.product-card {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+.product-image-wrapper {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.product-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-placeholder {
+  font-size: 48px;
+  color: #999;
+  font-weight: bold;
+}
+
+.stock-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #ff6b6b;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 15px;
+}
+
+.badge-text {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.product-info {
+  padding: 15px;
+}
+
+.product-name {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.product-description {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.product-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+.price-section {
+  
+}
+
+.price-current {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ff6b6b;
+}
+
+.price-original {
+  font-size: 14px;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.rating-section {
+  text-align: right;
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+}
+
+.star {
+  color: #ddd;
+  font-size: 14px;
+}
+
+.star.filled {
+  color: #ffd700;
+}
+
+.review-count {
+  font-size: 12px;
+  color: #666;
+}
+
+.product-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.add-to-cart {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  background: #ff6b6b;
   color: white;
   border-radius: 5px;
   cursor: pointer;
   transition: background 0.3s;
 }
 
-.control-button:hover {
-  background: #2980b9;
+.add-to-cart:hover {
+  background: #ff5252;
 }
 
-.data-section {
+.cart-icon-small {
+  font-size: 16px;
+}
+
+.add-text {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.favorite-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.favorite-button:hover {
+  border-color: #ff6b6b;
+}
+
+.heart-icon {
+  font-size: 20px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
   margin: 40px 0;
 }
 
-.data-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.data-item {
+.page-button, .page-number {
+  padding: 8px 15px;
   background: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
 }
 
-.data-header {
-  display: flex;
-  justify-content: space-between;
+.page-button:hover, .page-number:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.page-number.active {
+  background: #ff6b6b;
+  color: white;
+  border-color: #ff6b6b;
+}
+
+.promotion-banner {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+  color: white;
+  padding: 40px;
+  text-align: center;
+  margin: 40px 20px;
+  border-radius: 8px;
+}
+
+.banner-title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.banner-subtitle {
+  font-size: 18px;
   margin-bottom: 15px;
 }
 
-.data-title {
-  font-weight: bold;
-  font-size: 18px;
-}
-
-.data-value {
-  color: #3498db;
+.banner-timer {
   font-size: 24px;
   font-weight: bold;
 }
 
-.data-body {
-  margin: 15px 0;
+.footer {
+  background: #333;
+  color: white;
+  padding: 40px 20px 20px;
+  margin-top: 60px;
 }
 
-.data-footer {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid #eee;
-}
-
-.timestamp {
-  font-size: 12px;
-  color: #999;
-}
-
-.interactive-area {
-  position: relative;
-  height: 300px;
-  background: rgba(255,255,255,0.5);
-  border-radius: 10px;
-  margin: 30px 0;
-  overflow: hidden;
-}
-
-.click-zone {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.particle {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  animation: fadeOut 1s ease-out forwards;
-}
-
-@keyframes fadeOut {
-  to {
-    opacity: 0;
-    transform: scale(0);
-  }
-}
-
-.status-section {
-  margin: 40px 0;
-}
-
-.status-grid {
+.footer-content {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  max-width: 1000px;
+  margin: 0 auto;
+  margin-bottom: 30px;
 }
 
-.status-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  background: white;
-  border-radius: 5px;
+.footer-column {
+  
 }
 
-.status-indicator {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #ddd;
-  transition: background 0.3s;
+.footer-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 15px;
 }
 
-.status-indicator.active {
-  background: #2ecc71;
-  box-shadow: 0 0 10px rgba(46,204,113,0.5);
-}
-
-.status-label {
+.footer-link {
   font-size: 14px;
+  color: #ccc;
+  padding: 5px 0;
+  cursor: pointer;
+  transition: color 0.3s;
 }
 
-.loader-overlay {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  gap: 10px;
-  background: rgba(255,255,255,0.9);
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+.footer-link:hover {
+  color: white;
 }
 
-.box-content {
+.footer-bottom {
   text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid #555;
 }
 
-.box-number {
-  font-size: 24px;
-  margin-bottom: 5px;
-}
-
-.box-label {
+.copyright {
   font-size: 14px;
+  color: #999;
 }
 </style>
