@@ -7,8 +7,13 @@
         </div>
         <div class="search-area">
           <div class="search-box">
-            <div class="search-input" contenteditable="true" @input="handleSearch">商品を検索...</div>
-            <div class="search-button">検索</div>
+            <input type="text" 
+                   class="search-input" 
+                   placeholder="商品を検索..."
+                   v-model="searchQuery"
+                   @input="handleSearch"
+                   @keyup.enter="performSearch">
+            <div class="search-button" @click="performSearch">検索</div>
           </div>
         </div>
         <div class="user-area">
@@ -62,7 +67,13 @@
 
         <div class="product-area">
           <div class="sort-bar">
-            <div class="result-count">{{ products.length }}件の商品</div>
+            <div class="result-info">
+              <div class="result-count">{{ displayProducts.length }}件の商品</div>
+              <div v-if="searchQuery" class="search-results">
+                <div class="search-text">"{{ searchQuery }}" の検索結果</div>
+                <div class="clear-search" @click="clearSearch">✕</div>
+              </div>
+            </div>
             <div class="sort-options">
               <div class="sort-label">並び替え:</div>
               <div class="sort-select" @click="toggleSort">
@@ -72,7 +83,19 @@
             </div>
           </div>
 
-          <div class="products-grid">
+          <div v-if="displayProducts.length === 0" class="no-results">
+            <div class="no-results-icon">🔍</div>
+            <div class="no-results-title">検索結果がありません</div>
+            <div class="no-results-text">
+              <div v-if="searchQuery">「{{ searchQuery }}」に該当する商品が見つかりませんでした。</div>
+              <div v-else>条件に該当する商品がありません。</div>
+            </div>
+            <div class="no-results-actions">
+              <div class="reset-search" @click="clearFilters">すべての条件をリセット</div>
+            </div>
+          </div>
+
+          <div v-else class="products-grid">
             <div v-for="product in displayProducts" :key="`product-${product.id}-${product.sortKey}`" 
                  class="product-card">
               <div class="product-image-wrapper">
@@ -175,6 +198,7 @@ export default {
       selectedPriceRanges: [],
       brands: ['ブランドA', 'ブランドB', 'ブランドC', 'ブランドD', 'ブランドE'],
       selectedBrands: [],
+      searchQuery: '',
       products: [],
       displayProducts: [],
       productColors: ['#E8E8E8', '#F0E6E6', '#E6F0F0', '#F0F0E6', '#E6E6F0', '#F0E6F0', '#E6F0E6']
@@ -237,6 +261,17 @@ export default {
     },
     applyFilters() {
       let filtered = [...this.products]
+      
+      // 検索フィルター
+      if (this.searchQuery.trim()) {
+        const query = this.searchQuery.toLowerCase().trim()
+        filtered = filtered.filter(product => {
+          return product.name.toLowerCase().includes(query) ||
+                 product.description.toLowerCase().includes(query) ||
+                 product.category.toLowerCase().includes(query) ||
+                 product.brand.toLowerCase().includes(query)
+        })
+      }
       
       // カテゴリフィルター
       if (this.selectedCategory !== 'すべて') {
@@ -319,6 +354,7 @@ export default {
       this.selectedCategory = 'すべて'
       this.selectedPriceRanges = []
       this.selectedBrands = []
+      this.searchQuery = ''
       this.applyFilters()
     },
     toggleSort() {
@@ -334,11 +370,22 @@ export default {
     toggleFavorite(product) {
       product.favorited = !product.favorited
     },
-    handleSearch(event) {
-      // 検索時に商品を再シャッフル
-      if (event.target.textContent.length > 2) {
-        this.applyFilters()
-      }
+    handleSearch() {
+      // リアルタイム検索
+      this.applyFilters()
+    },
+    performSearch() {
+      // 検索ボタンクリック時
+      this.applyFilters()
+      // 検索時に順序をランダム化
+      this.displayProducts = this.displayProducts.map(product => ({
+        ...product,
+        sortKey: Math.random()
+      }))
+    },
+    clearSearch() {
+      this.searchQuery = ''
+      this.applyFilters()
     },
     startSaleTimer() {
       const updateTimer = () => {
@@ -415,7 +462,12 @@ export default {
   background: transparent;
   border: none;
   outline: none;
-  color: #666;
+  color: #333;
+  font-size: 14px;
+}
+
+.search-input::placeholder {
+  color: #999;
 }
 
 .search-button {
@@ -604,9 +656,91 @@ export default {
   margin-bottom: 20px;
 }
 
+.result-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
 .result-count {
   font-size: 16px;
   color: #666;
+}
+
+.search-results {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-text {
+  font-size: 14px;
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+.clear-search {
+  width: 20px;
+  height: 20px;
+  background: #ff6b6b;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.clear-search:hover {
+  background: #ff5252;
+}
+
+.no-results {
+  background: white;
+  padding: 60px;
+  text-align: center;
+  border-radius: 8px;
+  margin-bottom: 40px;
+}
+
+.no-results-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
+}
+
+.no-results-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.no-results-text {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+.no-results-actions {
+  
+}
+
+.reset-search {
+  display: inline-block;
+  padding: 12px 24px;
+  background: #ff6b6b;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s;
+  font-size: 14px;
+}
+
+.reset-search:hover {
+  background: #ff5252;
 }
 
 .sort-options {
